@@ -47,6 +47,9 @@ const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 // Beacon-Partikel mit Trail
 const beaconParticles=Array.from({length:120},()=>({a:Math.random()*Math.PI*2,r:Math.random(),v:.002+Math.random()*.004}));
 
+// Party-Partikel
+const party=[];
+
 function shape(progress,time,alpha){
  ctx.beginPath();
  const breathe=1+Math.sin(time*.002)*0.03*(1-progress);
@@ -107,6 +110,17 @@ function loop(t){
  for(let i=0;i<5;i++)shape(e,t+i*120,0.1+i*.07);
  drawBeacon(e,t);
 
+// Party-Effekt
+party.forEach(p=>{
+  p.x+=Math.cos(p.a)*p.v;
+  p.y+=Math.sin(p.a)*p.v;
+  p.v*=0.98;
+  p.life--;
+  ctx.fillStyle=`rgba(0,255,213,${p.life/100})`;
+  ctx.fillRect(p.x-2,p.y-2,4,4);
+});
+for(let i=party.length-1;i>=0;i--) if(party[i].life<=0) party.splice(i,1);
+
  ctx.restore();
 
  if(endMs){
@@ -115,7 +129,14 @@ function loop(t){
   out.textContent=`${String(h2).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
  }
 
- if(p>=1&&!finished){finished=true;ui.style.opacity=0;adv.classList.add('show');}
+ if(p>=1&&!finished){
+  finished=true;
+  ui.style.opacity=0;
+  adv.classList.add('show');
+  for(let i=0;i<120;i++){
+    party.push({x:0,y:0,a:Math.random()*Math.PI*2,v:2+Math.random()*4,life:60+Math.random()*40});
+  }
+}
  requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
