@@ -33,13 +33,16 @@ const c=document.getElementById('c'),ctx=c.getContext('2d');
 let w,h;const resize=()=>{w=c.width=innerWidth;h=c.height=innerHeight};addEventListener('resize',resize);resize();
 
 let startMs=null,endMs=null,duration=1,finished=false;
+let pauseOffset=0;
+let hiddenAt=null;
 function start(){
  const v=t.value;if(!v)return;
  const [hh,mm]=v.split(':').map(Number);
  const now=new Date(),target=new Date();
  target.setHours(hh,mm,0,0);if(target<now)target.setDate(target.getDate()+1);
  startMs=Date.now();endMs=target.getTime();duration=endMs-startMs;finished=false;
- ui.style.opacity=1;adv.classList.remove('show');
+ pauseOffset=0;hiddenAt=null;
+ ui.style.opacity=1;adv.classList.remove('show');('show');
 }
 
 const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
@@ -119,7 +122,13 @@ function loop(t){
  ctx.fillRect(0,0,w,h);
  ctx.save();ctx.translate(w/2,h/2);
 
- let p=0;if(startMs&&endMs){p=(Date.now()-startMs)/duration;p=Math.min(1,Math.max(0,p));}
+ let p=0;
+ if(startMs&&endMs){
+  const now=Date.now();
+  const effectiveNow = hiddenAt ? hiddenAt : now;
+  p=(effectiveNow-startMs-pauseOffset)/duration;
+  p=Math.min(1,Math.max(0,p));
+ }()-startMs)/duration;p=Math.min(1,Math.max(0,p));}
  const e=ease(p);
 
  shape(1,t,0.07);
@@ -154,6 +163,17 @@ for(let i=party.length-1;i>=0;i--) if(party[i].life<=0) party.splice(i,1);
   }
 }
  requestAnimationFrame(loop);
+}
+
+// Tab-Wechsel stabilisieren
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden){
+  hiddenAt=Date.now();
+ } else if(hiddenAt){
+  pauseOffset+=Date.now()-hiddenAt;
+  hiddenAt=null;
+ }
+});
 }
 requestAnimationFrame(loop);
 </script>
