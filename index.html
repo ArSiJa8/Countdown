@@ -2,50 +2,55 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Satisfying Countdown – Continuous Progress</title>
+<title>Satisfying Countdown – Beacon Trail</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 :root{--bg:#05070c;--accent:#00ffd5}
 *{box-sizing:border-box;font-family:system-ui,sans-serif}
 body{margin:0;height:100vh;overflow:hidden;background:radial-gradient(circle,#0a1220,var(--bg));color:white}
-.ui{position:absolute;top:20px;width:100%;text-align:center;z-index:10}
+.ui{position:absolute;top:20px;width:100%;text-align:center;z-index:10;transition:opacity 1s}
 input,button{font-size:1rem;padding:.5rem .8rem;border-radius:10px;border:none;background:rgba(255,255,255,.12);color:white}
 button{cursor:pointer;margin-left:.4rem}
 .time{margin-top:.6rem;font-size:1.6rem;letter-spacing:.15em;opacity:.7}
+.adv{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#0ff,#000);color:#003;font-size:3rem;font-weight:700;opacity:0;pointer-events:none;transition:opacity 1s}
+.adv.show{opacity:1}
 canvas{position:fixed;inset:0}
 </style>
 </head>
 <body>
 
-<div class="ui">
+<div class="ui" id="ui">
 <input type="time" id="t">
 <button onclick="start()">Start</button>
 <div class="time" id="out">--:--:--</div>
 </div>
 
+<div class="adv" id="adv">✨ ZIEL ERREICHT ✨</div>
 <canvas id="c"></canvas>
 
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d');
 let w,h;const resize=()=>{w=c.width=innerWidth;h=c.height=innerHeight};addEventListener('resize',resize);resize();
 
-let startMs=null,endMs=null,duration=1;
+let startMs=null,endMs=null,duration=1,finished=false;
 function start(){
  const v=t.value;if(!v)return;
  const [hh,mm]=v.split(':').map(Number);
  const now=new Date(),target=new Date();
  target.setHours(hh,mm,0,0);if(target<now)target.setDate(target.getDate()+1);
- startMs=Date.now();endMs=target.getTime();duration=endMs-startMs;
+ startMs=Date.now();endMs=target.getTime();duration=endMs-startMs;finished=false;
+ ui.style.opacity=1;adv.classList.remove('show');
 }
 
 const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 
-// Partikel für Beacon
-const beaconParticles=Array.from({length:80},()=>({a:Math.random()*Math.PI*2,r:Math.random(),v:.002+Math.random()*.004}));
+// Beacon-Partikel mit Trail
+const beaconParticles=Array.from({length:120},()=>({a:Math.random()*Math.PI*2,r:Math.random(),v:.002+Math.random()*.004}));
 
 function shape(progress,time,alpha){
  ctx.beginPath();
- const baseR=Math.min(w,h)*(.15+.35*progress);
+ const breathe=1+Math.sin(time*.002)*0.03*(1-progress);
+ const baseR=Math.min(w,h)*(.18+.34*progress)*breathe;
  for(let a=0;a<=Math.PI*2+.01;a+=.02){
   const chaos=(Math.sin(a*5+time*.001)+Math.cos(a*3-time*.0007))*0.5;
   const r=baseR*(1+chaos*(1-progress));
@@ -56,50 +61,61 @@ function shape(progress,time,alpha){
 
 function drawBeacon(progress,time){
  const angle=progress*Math.PI*2;
- const R=Math.min(w,h)*.42;
+ const R=Math.min(w,h)*.42*(1-0.05*(1-progress));
  const bx=Math.cos(angle)*R;
  const by=Math.sin(angle)*R;
 
- // Bahn
- ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);
- ctx.strokeStyle='rgba(255,255,255,.06)';ctx.stroke();
+ // Feste Fortschrittslinie
+ ctx.beginPath();
+ ctx.arc(0,0,R,-Math.PI/2,-Math.PI/2+angle);
+ ctx.strokeStyle='rgba(0,255,213,.35)';
+ ctx.lineWidth=3;
+ ctx.stroke();
 
- // Partikel
+ // Bahn (dezent)
+ ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);
+ ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1;ctx.stroke();
+
+ // Partikel mit Trail
  beaconParticles.forEach(p=>{
-  p.a+=p.v*(.3+progress*2);
-  const pr=8+p.r*10;
-  ctx.fillStyle='rgba(0,255,213,.6)';
-  ctx.beginPath();ctx.arc(bx+Math.cos(p.a)*pr,by+Math.sin(p.a)*pr,1.4,0,Math.PI*2);ctx.fill();
+  p.a+=p.v*(.3+progress*2)*(1-progress+.05);
+  const pr=10+p.r*12;
+  for(let i=3;i>=0;i--){
+    const ta=p.a-i*0.15;
+    ctx.fillStyle=`rgba(0,255,213,${0.15-i*0.04})`;
+    ctx.beginPath();
+    ctx.arc(bx+Math.cos(ta)*pr,by+Math.sin(ta)*pr,1.2,0,Math.PI*2);
+    ctx.fill();
+  }
  });
 
- // Beacon
- ctx.fillStyle='rgba(0,255,213,.9)';
- ctx.beginPath();ctx.arc(bx,by,4,0,Math.PI*2);ctx.fill();
+ // Beacon-Kern
+ ctx.fillStyle='rgba(0,255,213,.95)';
+ ctx.beginPath();ctx.arc(bx,by,4*(1-progress)+3,0,Math.PI*2);ctx.fill();
 }
 
 function loop(t){
- ctx.clearRect(0,0,w,h);
- ctx.translate(w/2,h/2);
+ // leichter Fade für Trails
+ ctx.fillStyle='rgba(5,7,12,0.25)';
+ ctx.fillRect(0,0,w,h);
+ ctx.save();ctx.translate(w/2,h/2);
 
  let p=0;if(startMs&&endMs){p=(Date.now()-startMs)/duration;p=Math.min(1,Math.max(0,p));}
  const e=ease(p);
 
- // Zielzustand (immer sichtbar)
- shape(1,t,0.08);
-
- // Übergang (dauerhaft sichtbar wachsend)
- for(let i=0;i<5;i++)shape(e,t+i*120,0.12+i*.08);
-
- // Beacon unabhängig vom Morph
+ shape(1,t,0.07);
+ for(let i=0;i<5;i++)shape(e,t+i*120,0.1+i*.07);
  drawBeacon(e,t);
 
- ctx.setTransform(1,0,0,1,0,0);
+ ctx.restore();
 
  if(endMs){
   const d=Math.max(0,endMs-Date.now());
   const s=Math.floor(d/1000)%60,m=Math.floor(d/60000)%60,h2=Math.floor(d/3600000);
   out.textContent=`${String(h2).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
  }
+
+ if(p>=1&&!finished){finished=true;ui.style.opacity=0;adv.classList.add('show');}
  requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
