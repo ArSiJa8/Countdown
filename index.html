@@ -68,9 +68,10 @@ function drawBeacon(progress,time){
  const bx=Math.cos(angle)*R;
  const by=Math.sin(angle)*R;
 
- // Feste Fortschrittslinie
+ // Feste Fortschrittslinie – vom Beacon selbst gezogen
  ctx.beginPath();
- ctx.arc(0,0,R,-Math.PI/2,-Math.PI/2+angle);
+ ctx.moveTo(0,-R);
+ ctx.lineTo(bx,by);
  ctx.strokeStyle='rgba(0,255,213,.35)';
  ctx.lineWidth=3;
  ctx.stroke();
