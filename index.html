@@ -63,7 +63,8 @@ function shape(progress,time,alpha){
 }
 
 function drawBeacon(progress,time){
- const angle=progress*Math.PI*2;
+ // Beacon startet oben (-90°)
+ const angle=-Math.PI/2 + progress*Math.PI*2;
  const R=Math.min(w,h)*.42*(1-0.05*(1-progress));
  const bx=Math.cos(angle)*R;
  const by=Math.sin(angle)*R;
