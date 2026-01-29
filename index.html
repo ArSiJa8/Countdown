@@ -69,13 +69,27 @@ function drawBeacon(progress,time){
  const bx=Math.cos(angle)*R;
  const by=Math.sin(angle)*R;
 
- // Feste Fortschrittslinie – vom Beacon selbst gezogen
+ // Feste Fortschrittslinie als Kreisbogen (vom Beacon gezeichnet)
  ctx.beginPath();
- ctx.moveTo(0,-R);
- ctx.lineTo(bx,by);
- ctx.strokeStyle='rgba(0,255,213,.35)';
- ctx.lineWidth=3;
+ const startA = -Math.PI/2;
+ ctx.arc(0,0,R,startA,angle,false);
+ ctx.strokeStyle='rgba(0,255,213,.45)';
+ ctx.lineWidth=5;
+ ctx.shadowColor='rgba(0,255,213,.6)';
+ ctx.shadowBlur=12;
  ctx.stroke();
+ ctx.shadowBlur=0;
+
+ // Glow-Partikel von der Linie
+ for(let i=0;i<6;i++){
+  const a=startA+Math.random()*(angle-startA);
+  const rx=Math.cos(a)*R;
+  const ry=Math.sin(a)*R;
+  ctx.fillStyle='rgba(0,255,213,.35)';
+  ctx.beginPath();
+  ctx.arc(rx,ry,1.4,0,Math.PI*2);
+  ctx.fill();
+ }
 
  // Bahn (dezent)
  ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);
